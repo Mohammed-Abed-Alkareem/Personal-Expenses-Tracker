@@ -13,8 +13,6 @@
         android:padding="20dp"
         android:background="@color/colorPrimary"
         android:textColor="@android:color/white" />
-        />
-
 
     <FrameLayout
         android:id="@+id/fragment_container_add"

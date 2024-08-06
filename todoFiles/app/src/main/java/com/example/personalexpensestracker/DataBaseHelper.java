@@ -103,13 +103,14 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             cursor = db.query(TABLE_EXPENSES, null, null, null, null, null, null);
             if (cursor != null) {
                 while (cursor.moveToNext()) {
+                    int id = cursor.getInt(cursor.getColumnIndex(COLUMN_ID));
                     String type = cursor.getString(cursor.getColumnIndex(COLUMN_TYPE));
                     double amount = cursor.getDouble(cursor.getColumnIndex(COLUMN_AMOUNT));
                     String notes = cursor.getString(cursor.getColumnIndex(COLUMN_NOTES));
                     LocalDate date = LocalDate.parse(cursor.getString(cursor.getColumnIndex(COLUMN_DATE)), DATE_FORMATTER);
                     LocalTime time = LocalTime.parse(cursor.getString(cursor.getColumnIndex(COLUMN_TIME)), TIME_FORMATTER);
 
-                    Expenses expense = new Expenses(type, amount, notes);
+                    Expenses expense = new Expenses(id,type, amount, notes);
                     expense.setDate(date);
                     expense.setTime(time);
                     expenseList.add(expense);
@@ -126,4 +127,68 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         }
         return expenseList;
     }
+
+    public Expenses getExpenseById(int expenseId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Expenses expense = null;
+
+        // Query to select the expense with the given ID
+        String query = "SELECT * FROM expenses WHERE id = ?";
+        Cursor cursor = null;
+
+        try {
+            cursor = db.rawQuery(query, new String[]{String.valueOf(expenseId)});
+
+            if (cursor != null && cursor.moveToFirst()) {
+                // Ensure column names match those in your database schema
+                int idColumnIndex = cursor.getColumnIndex(COLUMN_ID);
+                int typeColumnIndex = cursor.getColumnIndex(COLUMN_TYPE);
+                int amountColumnIndex = cursor.getColumnIndex(COLUMN_AMOUNT);
+                int notesColumnIndex = cursor.getColumnIndex(COLUMN_NOTES);
+                int dateColumnIndex = cursor.getColumnIndex(COLUMN_DATE); // Adjust as needed
+                int timeColumnIndex = cursor.getColumnIndex(COLUMN_TIME); // Adjust as needed
+
+                if (idColumnIndex != -1 && typeColumnIndex != -1 && amountColumnIndex != -1 && notesColumnIndex != -1 && dateColumnIndex != -1 && timeColumnIndex != -1) {
+                    int id = cursor.getInt(idColumnIndex);
+                    String type = cursor.getString(typeColumnIndex);
+                    double amount = cursor.getDouble(amountColumnIndex);
+                    String notes = cursor.getString(notesColumnIndex);
+                    String dateStr = cursor.getString(dateColumnIndex); // Adjust as needed
+                    String timeStr = cursor.getString(timeColumnIndex); // Adjust as needed
+
+
+                    // Create the Expenses object
+                    expense = new Expenses(id, type, amount, notes, LocalDate.parse(dateStr, DATE_FORMATTER), LocalTime.parse(timeStr, TIME_FORMATTER));
+//
+                } else {
+                    // Handle the case where one or more columns are missing
+                    Log.e("DatabaseHelper", "One or more columns are missing in the query result");
+                }
+            } else {
+                Log.e("DatabaseHelper", "Cursor is null or empty");
+            }
+        } catch (Exception e) {
+            Log.e("DatabaseHelper", "Error retrieving expense by ID: " + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            db.close();
+        }
+
+        return expense;
+    }
+
+    public void deleteExpense(int expenseId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        try {
+            db.delete(TABLE_EXPENSES, COLUMN_ID + " = ?", new String[]{String.valueOf(expenseId)});
+        } catch (Exception e) {
+            Log.e(TAG, "Error deleting expense: " + e.getMessage());
+            Toast.makeText(context, "Error deleting expense: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        } finally {
+            db.close();
+        }
+    }
+
 }

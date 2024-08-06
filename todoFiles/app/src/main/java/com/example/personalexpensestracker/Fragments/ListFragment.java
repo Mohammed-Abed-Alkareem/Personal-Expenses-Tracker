@@ -1,83 +1,102 @@
 package com.example.personalexpensestracker.Fragments;
 
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-
-import com.example.personalexpensestracker.DataBaseHelper;
-import com.example.personalexpensestracker.R;
-
-
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+
+import com.example.personalexpensestracker.DataBaseHelper;
+import com.example.personalexpensestracker.Expenses;
+import com.example.personalexpensestracker.R;
+
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ListFragment extends Fragment {
+
     private ListView expenseListView;
-    private ArrayAdapter<String> adapter;
-    private ArrayList<String> expenses;
     private DataBaseHelper dbHelper;
+    private List<Expenses> expenses;
+    private ArrayAdapter<Expenses> adapter;
+    private DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private OnExpenseSelectedListener onExpenseSelectedListener;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_list, container, false);
 
-        expenseListView = view.findViewById(R.id.expenseListView);
         dbHelper = new DataBaseHelper(getActivity(), "expenses", null, 1);
+        expenseListView = view.findViewById(R.id.expenseListView);
+
+        // Initialize expenses list
         expenses = new ArrayList<>();
 
-        loadExpenses();
-
-        adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, expenses);
-        expenseListView.setAdapter(adapter);
-
-        expenseListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        adapter = new ArrayAdapter<Expenses>(
+                getActivity(),
+                android.R.layout.simple_list_item_1,
+                expenses
+        ) {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                // Handle item click to show details in DetailsFragment
-                String selectedExpense = expenses.get(position);
-                DetailsFragment detailsFragment = (DetailsFragment) getFragmentManager().findFragmentById(R.id.fragment_container_details);
-                if (detailsFragment != null) {
-                    detailsFragment.displayExpenseDetails(selectedExpense);
+            public View getView(int position, View convertView, ViewGroup parent) {
+                if (convertView == null) {
+                    convertView = LayoutInflater.from(getContext()).inflate(android.R.layout.simple_list_item_1, parent, false);
+                }
+                Expenses expense = getItem(position);
+
+                if (expense != null) {
+                    String displayText = expense.getType() + " - " + expense.getTime().format(timeFormatter);
+                    ((TextView) convertView.findViewById(android.R.id.text1)).setText(displayText);
+                }
+
+                return convertView;
+            }
+        };
+
+        expenseListView.setAdapter(adapter);
+        expenseListView.setOnItemClickListener((parent, view1, position, id) -> {
+            Expenses selectedExpense = adapter.getItem(position);
+            if (selectedExpense != null) {
+                int expenseId = selectedExpense.getId();
+
+                if (onExpenseSelectedListener != null) {
+                    onExpenseSelectedListener.onExpenseSelected(expenseId);
                 }
             }
         });
 
+        // Initial load of expenses
+        refreshExpenses();
+
         return view;
-    }
-
-    private void loadExpenses() {
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor cursor = db.query(DataBaseHelper.TABLE_EXPENSES, null, null, null, null, null, null);
-
-        if (cursor != null) {
-            while (cursor.moveToNext()) {
-                String type = cursor.getString(cursor.getColumnIndex(DataBaseHelper.COLUMN_TYPE));
-                String time = cursor.getString(cursor.getColumnIndex(DataBaseHelper.COLUMN_TIME));
-                expenses.add(type + " at " + time);
-            }
-            cursor.close();
-        }
     }
 
     public void refreshExpenses() {
         expenses.clear();
-        loadExpenses();
+        expenses.addAll(dbHelper.getAllExpenses());
         adapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        try {
+            onExpenseSelectedListener = (OnExpenseSelectedListener) requireActivity();
+        } catch (ClassCastException e) {
+            throw new ClassCastException(requireActivity().toString() + " must implement OnExpenseSelectedListener");
+        }
+    }
+
+    public interface OnExpenseSelectedListener {
+        void onExpenseSelected(int expenseId);
     }
 }

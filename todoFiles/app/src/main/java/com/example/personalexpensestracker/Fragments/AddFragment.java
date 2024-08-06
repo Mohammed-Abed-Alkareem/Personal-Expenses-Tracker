@@ -1,5 +1,6 @@
 package com.example.personalexpensestracker.Fragments;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,18 +10,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-
 import com.example.personalexpensestracker.DataBaseHelper;
 import com.example.personalexpensestracker.Expenses;
 import com.example.personalexpensestracker.R;
-
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 
 public class AddFragment extends Fragment {
 
@@ -29,6 +24,7 @@ public class AddFragment extends Fragment {
     private Spinner expenseTypeSpinner;
     private Button addExpenseButton;
     private DataBaseHelper dbHelper;
+    private OnExpenseAddedListener listener;
 
     @Nullable
     @Override
@@ -71,13 +67,14 @@ public class AddFragment extends Fragment {
 
         try {
             double amount = Double.parseDouble(amountStr);
-            // Create an Expenses object
-            Expenses expense = new Expenses(type, amount, notes);
-
-
-            // Insert into the database
+            Expenses expense = new Expenses(0,type, amount, notes);
             dbHelper.addExpense(expense);
             Toast.makeText(getActivity(), "Expense added successfully", Toast.LENGTH_SHORT).show();
+
+            // Notify the listener
+            if (listener != null) {
+                listener.onExpenseAdded();
+            }
 
             // Clear input fields
             expenseAmount.setText("");
@@ -89,5 +86,19 @@ public class AddFragment extends Fragment {
         } catch (Exception e) {
             Toast.makeText(getActivity(), "Error adding expense: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
+    }
+
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        try {
+            listener = (OnExpenseAddedListener) context;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(context.toString() + " must implement OnExpenseAddedListener");
+        }
+    }
+
+    public interface OnExpenseAddedListener {
+        void onExpenseAdded();
     }
 }

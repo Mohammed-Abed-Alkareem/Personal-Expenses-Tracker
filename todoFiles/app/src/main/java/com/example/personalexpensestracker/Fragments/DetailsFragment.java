@@ -1,6 +1,5 @@
 package com.example.personalexpensestracker.Fragments;
 
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -13,7 +12,9 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.personalexpensestracker.DataBaseHelper;
+import com.example.personalexpensestracker.Expenses;
 import com.example.personalexpensestracker.R;
+import com.example.personalexpensestracker.Fragments.SharedPrefManager;
 
 public class DetailsFragment extends Fragment {
     private TextView expenseDetails;
@@ -22,7 +23,7 @@ public class DetailsFragment extends Fragment {
     private ImageButton minusButton;
     private TextView fontSizeTextView;
     private DataBaseHelper dbHelper;
-    private SharedPreferences sharedPreferences;
+    private SharedPrefManager sharedPrefManager;
 
     @Nullable
     @Override
@@ -34,17 +35,21 @@ public class DetailsFragment extends Fragment {
         plusButton = view.findViewById(R.id.plusButton);
         minusButton = view.findViewById(R.id.minusButton);
         fontSizeTextView = view.findViewById(R.id.fontSize);
-        dbHelper = new DataBaseHelper(getActivity(), "expenses", null, 1);
-        sharedPreferences = getActivity().getSharedPreferences("ExpenseTrackerPrefs", Context.MODE_PRIVATE);
 
-        // Set initial font size
-        int fontSize = sharedPreferences.getInt("fontSize", 18); // Default to 18sp
-        expenseDetails.setTextSize(fontSize);
-        fontSizeTextView.setText("Font Size: " + fontSize + "sp");
+        dbHelper = new DataBaseHelper(getActivity(), "expenses", null, 1);
+        sharedPrefManager = SharedPrefManager.getInstance(getActivity());
+        String fontSizeString = sharedPrefManager.readString("fontSize", "18");
+
+        expenseDetails.setTextSize(Float.parseFloat(fontSizeString));
+        fontSizeTextView.setText("Font Size: " + fontSizeString + "sp");
 
         deleteButton.setOnClickListener(v -> {
-            // Handle delete expense
-            // ...
+            // Delete the expense
+            String[] details = expenseDetails.getText().toString().split("\n");
+            String[] idString = details[0].split(": ");
+            int expenseId = Integer.parseInt(idString[1]);
+            dbHelper.deleteExpense(expenseId);
+            expenseDetails.setText("");
         });
 
         plusButton.setOnClickListener(v -> {
@@ -54,9 +59,7 @@ public class DetailsFragment extends Fragment {
                 currentSize += 2;
                 expenseDetails.setTextSize(currentSize);
                 fontSizeTextView.setText("Font Size: " + (int)currentSize + "sp");
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.putInt("fontSize", (int)currentSize);
-                editor.apply();
+                sharedPrefManager.writeString("fontSize", String.valueOf((int)currentSize));
             }
         });
 
@@ -67,9 +70,7 @@ public class DetailsFragment extends Fragment {
                 currentSize -= 2;
                 expenseDetails.setTextSize(currentSize);
                 fontSizeTextView.setText("Font Size: " + (int)currentSize + "sp");
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.putInt("fontSize", (int)currentSize);
-                editor.apply();
+                sharedPrefManager.writeString("fontSize", String.valueOf((int)currentSize));
             }
         });
 
@@ -78,5 +79,16 @@ public class DetailsFragment extends Fragment {
 
     public void displayExpenseDetails(String details) {
         expenseDetails.setText(details);
+    }
+
+    public void updateExpense(int expenseId) {
+        Expenses expense = dbHelper.getExpenseById(expenseId);
+        if (expense != null) {
+            String details = "Type: " + expense.getType() + "\n" +
+                    "Amount: " + expense.getAmount() + "\n" +
+                    "Notes: " + expense.getNotes() + "\n" +
+                    "Time: " + expense.getTime().toString(); // Update this as needed
+            displayExpenseDetails(details);
+        }
     }
 }

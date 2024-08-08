@@ -6,7 +6,7 @@ import com.example.personalexpensestracker.Fragments.AddFragment;
 import com.example.personalexpensestracker.Fragments.DetailsFragment;
 import com.example.personalexpensestracker.Fragments.ListFragment;
 
-public class MainActivity extends AppCompatActivity implements AddFragment.OnExpenseAddedListener, ListFragment.OnExpenseSelectedListener, DetailsFragment.OnExpenseDeletedListener {
+public class MainActivity extends AppCompatActivity implements AddFragment.AddedItem, ListFragment.SelectItemInList, DetailsFragment.ChangeInDetailedView {
 
     DataBaseHelper dbHelper;
 

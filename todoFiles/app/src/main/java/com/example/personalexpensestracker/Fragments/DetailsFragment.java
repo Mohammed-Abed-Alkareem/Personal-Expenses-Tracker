@@ -1,6 +1,5 @@
 package com.example.personalexpensestracker.Fragments;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,20 +13,16 @@ import androidx.fragment.app.Fragment;
 import com.example.personalexpensestracker.DataBaseHelper;
 import com.example.personalexpensestracker.Expenses;
 import com.example.personalexpensestracker.R;
-import com.example.personalexpensestracker.Fragments.SharedPrefManager;
 
 public class DetailsFragment extends Fragment {
     int expense_id;
     private TextView expenseDetails;
-    private ImageButton deleteButton;
-    private ImageButton plusButton;
-    private ImageButton minusButton;
     private TextView fontSizeTextView;
     private DataBaseHelper dbHelper;
     private SharedPrefManager sharedPrefManager;
-    private OnExpenseDeletedListener listener;
+    private ChangeInDetailedView delete_listener;
 
-    private OnExpenseDeletedListener listener_fontSize;
+    private ChangeInDetailedView listener_fontSize;
 
     @Nullable
     @Override
@@ -35,9 +30,9 @@ public class DetailsFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_details, container, false);
 
         expenseDetails = view.findViewById(R.id.expenseDetails);
-        deleteButton = view.findViewById(R.id.deleteButton);
-        plusButton = view.findViewById(R.id.plusButton);
-        minusButton = view.findViewById(R.id.minusButton);
+        ImageButton deleteButton = view.findViewById(R.id.deleteButton);
+        ImageButton plusButton = view.findViewById(R.id.plusButton);
+        ImageButton minusButton = view.findViewById(R.id.minusButton);
         fontSizeTextView = view.findViewById(R.id.fontSize);
 
         dbHelper = new DataBaseHelper(getActivity(), "expenses", null, 1);
@@ -51,14 +46,9 @@ public class DetailsFragment extends Fragment {
             // Delete the expense
             dbHelper.deleteExpense(expense_id);
             expenseDetails.setText("");
-            //notify the listener
-            // Notify the listener
-            if (listener != null) {
-                listener.onExpenseDeleted();
-            }
 
-            if (listener_fontSize != null) {
-                listener_fontSize.onFontSizeChanged();
+            if (delete_listener != null) {
+                delete_listener.onExpenseDeleted();
             }
 
         });
@@ -71,7 +61,10 @@ public class DetailsFragment extends Fragment {
                 expenseDetails.setTextSize(currentSize);
                 fontSizeTextView.setText("Font Size: " + (int) currentSize + "sp");
                 sharedPrefManager.writeString("fontSize", String.valueOf((int) currentSize));
-                listener_fontSize.onFontSizeChanged();
+
+                if (listener_fontSize != null) {
+                    listener_fontSize.onFontSizeChanged();
+                }
             }
         });
 
@@ -84,7 +77,9 @@ public class DetailsFragment extends Fragment {
                 fontSizeTextView.setText("Font Size: " + (int) currentSize + "sp");
                 sharedPrefManager.writeString("fontSize", String.valueOf((int) currentSize));
 
-                listener_fontSize.onFontSizeChanged();
+                if (listener_fontSize != null) {
+                    listener_fontSize.onFontSizeChanged();
+                }
             }
         });
 
@@ -92,6 +87,7 @@ public class DetailsFragment extends Fragment {
     }
 
     public void displayExpenseDetails(String details) {
+
         expenseDetails.setText(details);
     }
 
@@ -117,14 +113,14 @@ public class DetailsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         try {
-            listener = (OnExpenseDeletedListener) requireActivity();
-            listener_fontSize = (OnExpenseDeletedListener) requireActivity();
+            delete_listener = (ChangeInDetailedView) requireActivity();
+            listener_fontSize = (ChangeInDetailedView) requireActivity();
         } catch (ClassCastException e) {
             throw new ClassCastException(requireActivity().toString() + " must implement OnExpenseDeletedListener");
         }
     }
 
-    public interface OnExpenseDeletedListener {
+    public interface ChangeInDetailedView {
         void onExpenseDeleted();
 
         void onFontSizeChanged();

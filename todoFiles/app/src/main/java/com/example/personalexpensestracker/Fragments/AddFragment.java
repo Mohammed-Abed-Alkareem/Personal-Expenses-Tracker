@@ -1,6 +1,5 @@
 package com.example.personalexpensestracker.Fragments;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,8 +22,8 @@ public class AddFragment extends Fragment {
     private EditText expenseNotes;
     private Spinner expenseTypeSpinner;
     private Button addExpenseButton;
-    private DataBaseHelper dbHelper;
-    private OnExpenseAddedListener listener;
+    private DataBaseHelper databasehelper;
+    private AddedItem listenerForAdding;
 
     @Nullable
     @Override
@@ -38,25 +37,18 @@ public class AddFragment extends Fragment {
 
 
         // Initialize DataBaseHelper
-        dbHelper = new DataBaseHelper(getActivity(), "expenses", null, 1);
+        databasehelper = new DataBaseHelper(getActivity(), "expenses", null, 1);
+
         // Populate the Spinner with predefined expense types
-        String[] options = dbHelper.get_types();
-//        String[] options = {"Food", "Transport", "Shopping", "Rent", "Others"};
+        String[] options = databasehelper.get_types();
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_item, options);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         expenseTypeSpinner.setAdapter(adapter);
 
+        addExpenseButton.setOnClickListener(v ->
+                addExpense()
+        );
 
-
-
-
-        addExpenseButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                addExpense();
-            }
-        });
 
         return view;
     }
@@ -74,12 +66,12 @@ public class AddFragment extends Fragment {
         try {
             double amount = Double.parseDouble(amountStr);
             Expenses expense = new Expenses(0,type, amount, notes);
-            dbHelper.addExpense(expense);
+            databasehelper.addExpense(expense);
             Toast.makeText(getActivity(), "Expense added successfully", Toast.LENGTH_SHORT).show();
 
             // Notify the listener
-            if (listener != null) {
-                listener.onExpenseAdded();
+            if (listenerForAdding != null) {
+                listenerForAdding.onExpenseAdded();
             }
 
             // Clear input fields
@@ -98,7 +90,7 @@ public class AddFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         try {
-            listener = (OnExpenseAddedListener) requireActivity();
+            listenerForAdding = (AddedItem) requireActivity();
         } catch (ClassCastException e) {
             throw new ClassCastException(requireActivity().toString() + " must implement OnExpenseAddedListener");
         }
@@ -119,7 +111,7 @@ public class AddFragment extends Fragment {
 
     }
 
-    public interface OnExpenseAddedListener {
+    public interface AddedItem {
         void onExpenseAdded();
     }
 }

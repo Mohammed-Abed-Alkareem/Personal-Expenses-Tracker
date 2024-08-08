@@ -1,16 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="@color/white"
+  >
 
     <TextView
         android:id="@+id/expenseDetails"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Expense Details"
-        android:textSize="18sp" />
+        android:textSize="18sp"
+        android:textColor="@color/colorOnBackground"
+        android:layout_marginBottom="8dp"
+        android:textStyle="bold"/>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -23,13 +29,14 @@
             android:id="@+id/deleteButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_delete" />
+            android:background="@drawable/trash"
+      />
 
         <ImageButton
             android:id="@+id/plusButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_input_add"
+            android:background="@drawable/plus"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp" />
 
@@ -37,7 +44,8 @@
             android:id="@+id/minusButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_menu_revert" />
+            android:background="@drawable/minus"
+         />
     </LinearLayout>
 
     <TextView
@@ -47,5 +55,6 @@
         android:gravity="center_horizontal"
         android:paddingTop="8dp"
         android:text="Font Size: 18sp"
-        android:textSize="16sp" />
+        android:textSize="16sp"
+        android:textColor="@color/colorOnBackground" />
 </LinearLayout>

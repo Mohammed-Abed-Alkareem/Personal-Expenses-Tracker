@@ -36,18 +36,24 @@ public class AddFragment extends Fragment {
         expenseNotes = view.findViewById(R.id.expenseNotes);
         addExpenseButton = view.findViewById(R.id.addExpenseButton);
 
+
+        // Initialize DataBaseHelper
+        dbHelper = new DataBaseHelper(getActivity(), "expenses", null, 1);
         // Populate the Spinner with predefined expense types
-        String[] options = {"Food", "Transport", "Entertainment", "Others"};
+        String[] options = dbHelper.get_types();
+//        String[] options = {"Food", "Transport", "Shopping", "Rent", "Others"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_item, options);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         expenseTypeSpinner.setAdapter(adapter);
 
-        // Initialize DataBaseHelper
-        dbHelper = new DataBaseHelper(getActivity(), "expenses", null, 1);
+
+
+
 
         addExpenseButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 addExpense();
             }
         });
@@ -89,13 +95,28 @@ public class AddFragment extends Fragment {
     }
 
     @Override
-    public void onAttach(@NonNull Context context) {
-        super.onAttach(context);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         try {
-            listener = (OnExpenseAddedListener) context;
+            listener = (OnExpenseAddedListener) requireActivity();
         } catch (ClassCastException e) {
-            throw new ClassCastException(context.toString() + " must implement OnExpenseAddedListener");
+            throw new ClassCastException(requireActivity().toString() + " must implement OnExpenseAddedListener");
         }
+    }
+
+    public void changeFontSize() {
+        //get font size from shared preferences
+        SharedPrefManager sharedPrefManager = SharedPrefManager.getInstance(getActivity());
+        String fontSizeString = sharedPrefManager.readString("fontSize", "18");
+
+        //convert font size to float
+        float fontSize = Float.parseFloat(fontSizeString);
+
+        //set font size for the views
+        expenseAmount.setTextSize(fontSize);
+        expenseNotes.setTextSize(fontSize);
+        addExpenseButton.setTextSize(fontSize);
+
     }
 
     public interface OnExpenseAddedListener {

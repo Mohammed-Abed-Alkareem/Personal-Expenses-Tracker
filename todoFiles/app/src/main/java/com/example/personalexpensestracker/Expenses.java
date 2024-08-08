@@ -27,6 +27,7 @@ public class Expenses {
         this.notes = notes;
         this.date = date;
         this.time = time;
+        System.out.println(time);
     }
 
     public int getId() {

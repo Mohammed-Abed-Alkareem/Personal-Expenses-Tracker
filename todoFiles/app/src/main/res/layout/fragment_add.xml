@@ -1,32 +1,71 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="@color/white"
+   >
 
-    <Spinner
-        android:id="@+id/expenseTypeSpinner"
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Select Expense Type" />
+        android:layout_marginBottom="1dp"
+        android:elevation="4dp"
+        app:cardCornerRadius="8dp"
+        app:cardBackgroundColor="@android:color/white">
 
-    <EditText
-        android:id="@+id/expenseAmount"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:inputType="numberDecimal"
-        android:hint="Enter Amount" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
 
-    <EditText
-        android:id="@+id/expenseNotes"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Enter Notes (Optional)"
-        android:inputType="textMultiLine" />
+            <Spinner
+                android:id="@+id/expenseTypeSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:popupBackground="@color/white"
+                android:padding="16dp"
+                android:dropDownWidth="match_parent"
+                android:dropDownVerticalOffset="8dp"
+                android:textSize="16sp"
+                android:textColor="@color/black"
+                android:hint="Select Expense Type"
+                android:spinnerMode="dropdown"
+                android:background="@drawable/spinner_background"/>
 
-    <Button
-        android:id="@+id/addExpenseButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Add Expense" />
+            <EditText
+                android:id="@+id/expenseAmount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:inputType="numberDecimal"
+                android:hint="Enter Amount"
+                android:padding="16dp"
+                android:background="@drawable/edit_text_background"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"/>
+
+            <EditText
+                android:id="@+id/expenseNotes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="Enter Notes (Optional)"
+                android:inputType="textMultiLine"
+                android:padding="16dp"
+                android:background="@drawable/edit_text_background"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/addExpenseButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Add Expense"
+                app:cornerRadius="8dp"/>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 </LinearLayout>

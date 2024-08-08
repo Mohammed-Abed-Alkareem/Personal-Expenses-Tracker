@@ -6,7 +6,9 @@ import com.example.personalexpensestracker.Fragments.AddFragment;
 import com.example.personalexpensestracker.Fragments.DetailsFragment;
 import com.example.personalexpensestracker.Fragments.ListFragment;
 
-public class MainActivity extends AppCompatActivity implements AddFragment.OnExpenseAddedListener, ListFragment.OnExpenseSelectedListener {
+public class MainActivity extends AppCompatActivity implements AddFragment.OnExpenseAddedListener, ListFragment.OnExpenseSelectedListener, DetailsFragment.OnExpenseDeletedListener {
+
+    DataBaseHelper dbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,4 +39,30 @@ public class MainActivity extends AppCompatActivity implements AddFragment.OnExp
             detailsFragment.updateExpense(expenseId);
         }
     }
+
+    @Override
+    public void onExpenseDeleted() {
+        ListFragment listFragment = (ListFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_container_list);
+        if (listFragment != null) {
+            listFragment.refreshExpenses();
+        }
+
+
+    }
+    @Override
+    public void onFontSizeChanged(){
+        // change font size in the other fragments
+        AddFragment addFragment = (AddFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_container_add);
+        if (addFragment != null) {
+            addFragment.changeFontSize();
+        }
+
+        ListFragment listFragment = (ListFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_container_list);
+        if (listFragment != null) {
+            listFragment.changeFontSize();
+        }
+
+
+    }
+
 }

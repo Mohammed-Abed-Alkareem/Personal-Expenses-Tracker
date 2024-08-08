@@ -26,13 +26,6 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ISO_LOCAL_TIME;
 
-    public static final String TABLE_EXPENSES = "EXPENSES";
-    public static final String COLUMN_ID = "ID";
-    public static final String COLUMN_TYPE = "TYPE";
-    public static final String COLUMN_AMOUNT = "AMOUNT";
-    public static final String COLUMN_NOTES = "NOTES";
-    public static final String COLUMN_DATE = "DATE";
-    public static final String COLUMN_TIME = "TIME";
 
     public DataBaseHelper(Context context, String name, SQLiteDatabase.CursorFactory factory, int version) {
         super(context, name, factory, version);
@@ -42,14 +35,28 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
         try {
-            String TABLE_CREATE = "CREATE TABLE " + TABLE_EXPENSES + " (" +
-                    COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    COLUMN_TYPE + " TEXT, " +
-                    COLUMN_AMOUNT + " REAL, " +
-                    COLUMN_NOTES + " TEXT, " +
-                    COLUMN_DATE + " TEXT, " +
-                    COLUMN_TIME + " TEXT)";
-            sqLiteDatabase.execSQL(TABLE_CREATE);
+            String TABLE_CREATE_TYPE = "CREATE TABLE expenses_type (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "type TEXT UNIQUE)";
+            sqLiteDatabase.execSQL(TABLE_CREATE_TYPE);
+
+            sqLiteDatabase.execSQL("INSERT INTO expenses_type (type) VALUES ('Food')");
+            sqLiteDatabase.execSQL("INSERT INTO expenses_type (type) VALUES ('Transport')");
+            sqLiteDatabase.execSQL("INSERT INTO expenses_type (type) VALUES ('Entertainment')");
+            sqLiteDatabase.execSQL("INSERT INTO expenses_type (type) VALUES ('Electricity')");
+            sqLiteDatabase.execSQL("INSERT INTO expenses_type (type) VALUES ('Water')");
+            sqLiteDatabase.execSQL("INSERT INTO expenses_type (type) VALUES ('Rent')");
+
+            String TABLE_CREATE_EXPENSES = "CREATE TABLE EXPENSES (" +
+                    "ID INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "AMOUNT REAL, " +
+                    "NOTES TEXT, " +
+                    "DATE TEXT, " +
+                    "TIME TEXT, " +
+                    "TYPE INTEGER, " +
+                    "FOREIGN KEY (TYPE) REFERENCES expenses_type(id))";
+            sqLiteDatabase.execSQL(TABLE_CREATE_EXPENSES);
+
         } catch (Exception e) {
             Log.e(TAG, "Error creating table: " + e.getMessage());
             Toast.makeText(context, "Error creating table: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -59,7 +66,8 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if (oldVersion < newVersion) {
-            db.execSQL("DROP TABLE IF EXISTS " + TABLE_EXPENSES);
+            db.execSQL("DROP TABLE IF EXISTS EXPENSES");
+            db.execSQL("DROP TABLE IF EXISTS expenses_type");
             onCreate(db);
         }
     }
@@ -69,12 +77,20 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         try {
             sqLiteDatabase = this.getWritableDatabase();
             ContentValues values = new ContentValues();
-            values.put(COLUMN_TYPE, expense.getType());
-            values.put(COLUMN_AMOUNT, expense.getAmount());
-            values.put(COLUMN_NOTES, expense.getNotes());
-            values.put(COLUMN_DATE, expense.getDate().format(DATE_FORMATTER));
-            values.put(COLUMN_TIME, expense.getTime().format(TIME_FORMATTER));
-            sqLiteDatabase.insertOrThrow(TABLE_EXPENSES, null, values);
+
+            values.put("AMOUNT", expense.getAmount());
+            values.put("NOTES", expense.getNotes());
+            values.put("DATE", expense.getDate().format(DATE_FORMATTER));
+            values.put("TIME", expense.getTime().format(TIME_FORMATTER));
+
+            // Get the ID of the expense type
+            Cursor cursor = sqLiteDatabase.rawQuery("SELECT id FROM expenses_type WHERE type = ?", new String[]{expense.getType()});
+            if (cursor != null && cursor.moveToFirst()) {
+                int typeId = cursor.getInt(getColumnIndex(cursor, "id"));
+                values.put("TYPE", typeId);
+            }
+
+            sqLiteDatabase.insertOrThrow("EXPENSES", null, values);
 
             System.out.println("type: " + expense.getType());
             System.out.println("amount: " + expense.getAmount());
@@ -100,17 +116,24 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = null;
         try {
-            cursor = db.query(TABLE_EXPENSES, null, null, null, null, null, null);
+            cursor = db.query("EXPENSES", null, null, null, null, null, null);
             if (cursor != null) {
                 while (cursor.moveToNext()) {
-                    int id = cursor.getInt(cursor.getColumnIndex(COLUMN_ID));
-                    String type = cursor.getString(cursor.getColumnIndex(COLUMN_TYPE));
-                    double amount = cursor.getDouble(cursor.getColumnIndex(COLUMN_AMOUNT));
-                    String notes = cursor.getString(cursor.getColumnIndex(COLUMN_NOTES));
-                    LocalDate date = LocalDate.parse(cursor.getString(cursor.getColumnIndex(COLUMN_DATE)), DATE_FORMATTER);
-                    LocalTime time = LocalTime.parse(cursor.getString(cursor.getColumnIndex(COLUMN_TIME)), TIME_FORMATTER);
+                    int id = cursor.getInt(getColumnIndex(cursor, "ID"));
+                    double amount = cursor.getDouble(getColumnIndex(cursor, "AMOUNT"));
+                    String notes = cursor.getString(getColumnIndex(cursor, "NOTES"));
+                    LocalDate date = LocalDate.parse(cursor.getString(getColumnIndex(cursor, "DATE")), DATE_FORMATTER);
+                    LocalTime time = LocalTime.parse(cursor.getString(getColumnIndex(cursor, "TIME")), TIME_FORMATTER);
 
-                    Expenses expense = new Expenses(id,type, amount, notes);
+                    // Get the expense type
+                    int typeId = cursor.getInt(getColumnIndex(cursor, "TYPE"));
+                    Cursor typeCursor = db.rawQuery("SELECT type FROM expenses_type WHERE id = ?", new String[]{String.valueOf(typeId)});
+                    String type = "";
+                    if (typeCursor != null && typeCursor.moveToFirst()) {
+                        type = typeCursor.getString(getColumnIndex(typeCursor, "type"));
+                    }
+
+                    Expenses expense = new Expenses(id, type, amount, notes);
                     expense.setDate(date);
                     expense.setTime(time);
                     expenseList.add(expense);
@@ -140,35 +163,37 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             cursor = db.rawQuery(query, new String[]{String.valueOf(expenseId)});
 
             if (cursor != null && cursor.moveToFirst()) {
-                // Ensure column names match those in your database schema
-                int idColumnIndex = cursor.getColumnIndex(COLUMN_ID);
-                int typeColumnIndex = cursor.getColumnIndex(COLUMN_TYPE);
-                int amountColumnIndex = cursor.getColumnIndex(COLUMN_AMOUNT);
-                int notesColumnIndex = cursor.getColumnIndex(COLUMN_NOTES);
-                int dateColumnIndex = cursor.getColumnIndex(COLUMN_DATE); // Adjust as needed
-                int timeColumnIndex = cursor.getColumnIndex(COLUMN_TIME); // Adjust as needed
+                int idColumnIndex = getColumnIndex(cursor, "ID");
+                int typeColumnIndex = getColumnIndex(cursor, "TYPE");
+                int amountColumnIndex = getColumnIndex(cursor, "AMOUNT");
+                int notesColumnIndex = getColumnIndex(cursor, "NOTES");
+                int dateColumnIndex = getColumnIndex(cursor, "DATE");
+                int timeColumnIndex = getColumnIndex(cursor, "TIME");
 
-                if (idColumnIndex != -1 && typeColumnIndex != -1 && amountColumnIndex != -1 && notesColumnIndex != -1 && dateColumnIndex != -1 && timeColumnIndex != -1) {
                     int id = cursor.getInt(idColumnIndex);
-                    String type = cursor.getString(typeColumnIndex);
+                    int typeId = cursor.getInt(typeColumnIndex);
                     double amount = cursor.getDouble(amountColumnIndex);
                     String notes = cursor.getString(notesColumnIndex);
-                    String dateStr = cursor.getString(dateColumnIndex); // Adjust as needed
-                    String timeStr = cursor.getString(timeColumnIndex); // Adjust as needed
+                    LocalDate date = LocalDate.parse(cursor.getString(dateColumnIndex), DATE_FORMATTER);
+                    LocalTime time = LocalTime.parse(cursor.getString(timeColumnIndex), TIME_FORMATTER);
 
+                    // Get the expense type from the expense_type table
+                    String type = "";
+                    Cursor typeCursor = db.rawQuery("SELECT type FROM expenses_type WHERE id = ?", new String[]{String.valueOf(typeId)});
+                    if (typeCursor != null && typeCursor.moveToFirst()) {
+                        type = typeCursor.getString(getColumnIndex(typeCursor, "type"));
+                    }
 
                     // Create the Expenses object
-                    expense = new Expenses(id, type, amount, notes, LocalDate.parse(dateStr, DATE_FORMATTER), LocalTime.parse(timeStr, TIME_FORMATTER));
-//
-                } else {
-                    // Handle the case where one or more columns are missing
-                    Log.e("DatabaseHelper", "One or more columns are missing in the query result");
-                }
+                    expense = new Expenses(id, type, amount, notes);
+                    expense.setDate(date);
+                    expense.setTime(time);
+
             } else {
-                Log.e("DatabaseHelper", "Cursor is null or empty");
+                Log.e(TAG, "Cursor is null or empty");
             }
         } catch (Exception e) {
-            Log.e("DatabaseHelper", "Error retrieving expense by ID: " + e.getMessage());
+            Log.e(TAG, "Error retrieving expense by ID: " + e.getMessage());
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -179,10 +204,18 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         return expense;
     }
 
+    private int getColumnIndex(Cursor cursor, String columnName) {
+        int index = cursor.getColumnIndex(columnName);
+        if (index == -1) {
+            Log.e(TAG, "Column index not found for column: " + columnName);
+        }
+        return index;
+    }
+
     public void deleteExpense(int expenseId) {
         SQLiteDatabase db = this.getWritableDatabase();
         try {
-            db.delete(TABLE_EXPENSES, COLUMN_ID + " = ?", new String[]{String.valueOf(expenseId)});
+            db.delete("EXPENSES", "ID" + " = ?", new String[]{String.valueOf(expenseId)});
         } catch (Exception e) {
             Log.e(TAG, "Error deleting expense: " + e.getMessage());
             Toast.makeText(context, "Error deleting expense: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -191,4 +224,17 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    public String[] get_types() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT type FROM expenses_type", null);
+        String[] types = new String[cursor.getCount()];
+        int i = 0;
+        while (cursor.moveToNext()) {
+            types[i] = cursor.getString(0);
+            i++;
+        }
+        cursor.close();
+        db.close();
+        return types;
+    }
 }

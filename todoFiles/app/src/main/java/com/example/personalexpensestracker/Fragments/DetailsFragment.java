@@ -17,6 +17,7 @@ import com.example.personalexpensestracker.R;
 import com.example.personalexpensestracker.Fragments.SharedPrefManager;
 
 public class DetailsFragment extends Fragment {
+    int expense_id;
     private TextView expenseDetails;
     private ImageButton deleteButton;
     private ImageButton plusButton;
@@ -24,6 +25,9 @@ public class DetailsFragment extends Fragment {
     private TextView fontSizeTextView;
     private DataBaseHelper dbHelper;
     private SharedPrefManager sharedPrefManager;
+    private OnExpenseDeletedListener listener;
+
+    private OnExpenseDeletedListener listener_fontSize;
 
     @Nullable
     @Override
@@ -45,21 +49,29 @@ public class DetailsFragment extends Fragment {
 
         deleteButton.setOnClickListener(v -> {
             // Delete the expense
-            String[] details = expenseDetails.getText().toString().split("\n");
-            String[] idString = details[0].split(": ");
-            int expenseId = Integer.parseInt(idString[1]);
-            dbHelper.deleteExpense(expenseId);
+            dbHelper.deleteExpense(expense_id);
             expenseDetails.setText("");
+            //notify the listener
+            // Notify the listener
+            if (listener != null) {
+                listener.onExpenseDeleted();
+            }
+
+            if (listener_fontSize != null) {
+                listener_fontSize.onFontSizeChanged();
+            }
+
         });
 
         plusButton.setOnClickListener(v -> {
             // Increase font size
             float currentSize = expenseDetails.getTextSize() / getResources().getDisplayMetrics().scaledDensity;
-            if (currentSize < 48) { // Maximum font size limit
+            if (currentSize < 30) { // Maximum font size limit
                 currentSize += 2;
                 expenseDetails.setTextSize(currentSize);
-                fontSizeTextView.setText("Font Size: " + (int)currentSize + "sp");
-                sharedPrefManager.writeString("fontSize", String.valueOf((int)currentSize));
+                fontSizeTextView.setText("Font Size: " + (int) currentSize + "sp");
+                sharedPrefManager.writeString("fontSize", String.valueOf((int) currentSize));
+                listener_fontSize.onFontSizeChanged();
             }
         });
 
@@ -69,8 +81,10 @@ public class DetailsFragment extends Fragment {
             if (currentSize > 10) { // Minimum font size limit
                 currentSize -= 2;
                 expenseDetails.setTextSize(currentSize);
-                fontSizeTextView.setText("Font Size: " + (int)currentSize + "sp");
-                sharedPrefManager.writeString("fontSize", String.valueOf((int)currentSize));
+                fontSizeTextView.setText("Font Size: " + (int) currentSize + "sp");
+                sharedPrefManager.writeString("fontSize", String.valueOf((int) currentSize));
+
+                listener_fontSize.onFontSizeChanged();
             }
         });
 
@@ -82,13 +96,39 @@ public class DetailsFragment extends Fragment {
     }
 
     public void updateExpense(int expenseId) {
+        expense_id = expenseId;
         Expenses expense = dbHelper.getExpenseById(expenseId);
         if (expense != null) {
-            String details = "Type: " + expense.getType() + "\n" +
-                    "Amount: " + expense.getAmount() + "\n" +
-                    "Notes: " + expense.getNotes() + "\n" +
-                    "Time: " + expense.getTime().toString(); // Update this as needed
+            // store each expense detail in a string
+            String type = expense.getType();
+            double amount = expense.getAmount();
+            String notes = expense.getNotes();
+            String date = expense.getDate().toString();
+            String time = expense.getTime().toString();
+            if (notes.isEmpty()) {
+                notes = "No notes";
+            }
+            String details = "Type: " + type + "\nAmount: " + amount + "\nNotes: " + notes + "\nDate: " + date + "\nTime: " + time;
             displayExpenseDetails(details);
         }
     }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        try {
+            listener = (OnExpenseDeletedListener) requireActivity();
+            listener_fontSize = (OnExpenseDeletedListener) requireActivity();
+        } catch (ClassCastException e) {
+            throw new ClassCastException(requireActivity().toString() + " must implement OnExpenseDeletedListener");
+        }
+    }
+
+    public interface OnExpenseDeletedListener {
+        void onExpenseDeleted();
+
+        void onFontSizeChanged();
+
+    }
 }
+

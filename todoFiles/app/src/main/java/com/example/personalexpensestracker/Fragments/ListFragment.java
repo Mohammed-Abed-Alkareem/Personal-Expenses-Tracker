@@ -55,7 +55,12 @@ public class ListFragment extends Fragment {
 
                 if (expense != null) {
                     String displayText = expense.getType() + " - " + expense.getTime().format(timeFormatter);
-                    ((TextView) convertView.findViewById(android.R.id.text1)).setText(displayText);
+                    TextView textView = convertView.findViewById(android.R.id.text1);
+                    textView.setText(displayText);
+
+                    // Apply font size
+                    float fontSize = getFontSize();
+                    textView.setTextSize(fontSize);
                 }
 
                 return convertView;
@@ -94,6 +99,18 @@ public class ListFragment extends Fragment {
         } catch (ClassCastException e) {
             throw new ClassCastException(requireActivity().toString() + " must implement OnExpenseSelectedListener");
         }
+    }
+
+    public void changeFontSize() {
+        // Refresh the font size for the list items
+        adapter.notifyDataSetChanged();
+    }
+
+    private float getFontSize() {
+        // Retrieve font size from shared preferences
+        SharedPrefManager sharedPrefManager = SharedPrefManager.getInstance(getActivity());
+        String fontSizeString = sharedPrefManager.readString("fontSize", "18");
+        return Float.parseFloat(fontSizeString);
     }
 
     public interface OnExpenseSelectedListener {

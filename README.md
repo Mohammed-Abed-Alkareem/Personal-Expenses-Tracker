@@ -47,7 +47,8 @@ The application consists of the following fragments:
 
 ## Demo
 
-![App Demo](demo.gif)
+
+<img src="/demo.gif" alt="App Demo" height="400">
 
 ## Requirements
 

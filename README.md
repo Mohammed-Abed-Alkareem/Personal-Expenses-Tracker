@@ -33,7 +33,7 @@ The application consists of the following fragments:
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/PersonalExpensesTracker.git
+   git clone https://github.com/Mohammed-Abed-Alkareem/Personal-Expenses-Tracker
    ```
 2. Open the project in Android Studio.
 3. Build and run the app on an emulator or Android device.
